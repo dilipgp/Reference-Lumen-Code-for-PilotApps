@@ -1,0 +1,59 @@
+  
+  
+trigger: none
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+#  - group: keyvault-image-build-variables
+#  - group: packer-image-build-variables
+  - group: Variables
+  
+jobs:
+- job: DeployAVD
+  steps:
+  - task: Bash@3
+    name: 'TerraformInit'
+    env:
+      ARM_CLIENT_ID: $(servicePrincipalId)
+      ARM_CLIENT_SECRET: $(servicePrincipalKey)
+      ARM_SUBSCRIPTION_ID: $(SubscriptionID)
+      ARM_TENANT_ID: $(tenantId)
+    inputs:
+      targetType: 'inline'
+      script: |
+        terraform init
+      workingDirectory: '$(Build.SourcesDirectory)/terraform/AVD_Deploy'
+
+  - pwsh: |
+      # Now you can use PowerShell Core
+      Get-Date
+    displayName: 'Run PowerShell Command'
+
+  - task: Bash@3
+    name: 'TerraformPlan'
+    env:
+      ARM_CLIENT_ID: $(servicePrincipalId)
+      ARM_CLIENT_SECRET: $(servicePrincipalKey)
+      ARM_SUBSCRIPTION_ID: $(SubscriptionID)
+      ARM_TENANT_ID: $(tenantId)
+    inputs:
+      targetType: 'inline'
+      script: |
+        terraform plan -out="main.tfplan" -input=false
+      workingDirectory: '$(Build.SourcesDirectory)/terraform/AVD_Deploy'
+
+  - task: Bash@3
+    name: 'TerraformApply'
+    env:
+      ARM_CLIENT_ID: $(servicePrincipalId)
+      ARM_CLIENT_SECRET: $(servicePrincipalKey)
+      ARM_SUBSCRIPTION_ID: $(SubscriptionID)
+      ARM_TENANT_ID: $(tenantId)
+    inputs:
+      targetType: 'inline'
+      script: |
+        terraform apply main.tfplan
+      workingDirectory: '$(Build.SourcesDirectory)/terraform/AVD_Deploy'
+
